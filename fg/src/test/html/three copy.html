@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 載入STL並加上右鍵選單</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+
+        /* 選單的 CSS 樣式 (與之前相同) */
+        #context-menu {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 150px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #context-menu ul { list-style: none; margin: 0; padding: 5px 0; }
+        #context-menu li { padding: 8px 15px; cursor: pointer; font-family: sans-serif; font-size: 14px; }
+        #context-menu li:hover { background-color: #007bff; color: white; }
+        #context-menu hr { border: 0; border-top: 1px solid #e0e0e0; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <!-- 選單的 HTML 結構 (與之前相同) -->
+    <div id="context-menu">
+        <ul>
+            <li data-action="view-top">頂視圖</li>
+            <li data-action="view-front">前視圖</li>
+            <li data-action="view-side">側視圖</li>
+            <hr>
+            <li data-action="opacity-1">不透明</li>
+            <li data-action="opacity-0.5">半透明 (50%)</li>
+            <li data-action="opacity-0.1">幽靈模式 (10%)</li>
+        </ul>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+        // --- 基本 Three.js 設定 ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xd9d9d9); // 藍灰色背景
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(20, 20, 20); // 為STL模型準備一個較遠的視角
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- 關鍵步驟 1: 宣告一個變數來存放我們即將載入的模型 ---
+        let targetModel = null;
+
+        // --- 載入 STL 模型 ---
+        const loader = new STLLoader();
+        loader.load(
+            'my_model.stl', // 請確保此檔案存在
+            function (geometry) {
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0xa3a3c2,
+                    specular: 0xd9d9d9,
+                    shininess: 200
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+
+                // 將模型置中
+                geometry.computeBoundingBox();
+                const center = new THREE.Vector3();
+                geometry.boundingBox.getCenter(center);
+                mesh.position.sub(center);
+
+                scene.add(mesh);
+
+                // --- 關鍵步驟 2: 模型載入成功後，將它賦值給我們的 targetModel ---
+                targetModel = mesh;
+                console.log("STL 模型已載入並設定為目標。");
+            },
+            (xhr) => console.log((xhr.loaded / xhr.total * 100) + '% loaded'),
+            (error) => console.error('STL 檔案載入失敗:', error)
+        );
+
+        // --- 右鍵選單的互動邏輯 ---
+        const menu = document.getElementById('context-menu');
+
+        renderer.domElement.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            menu.style.top = `${event.clientY}px`;
+            menu.style.left = `${event.clientX}px`;
+            menu.style.display = 'block';
+        });
+
+        window.addEventListener('click', () => {
+            menu.style.display = 'none';
+        });
+
+        menu.addEventListener('click', (event) => {
+            const action = event.target.dataset.action;
+            if (!action) return;
+
+            // --- 關鍵步驟 3: 在操作模型前，先檢查 targetModel 是否已載入 ---
+            if (action.startsWith('opacity') && !targetModel) {
+                alert("模型尚未載入完成，請稍候再試。");
+                menu.style.display = 'none';
+                return;
+            }
+
+            // 根據 STL 模型的可能尺寸，調整視圖距離
+            const viewDistance = 150; 
+
+            switch (action) {
+                // 處理方向 (操作 camera，與模型是否載入無關)
+                case 'view-top':
+                    camera.position.set(0, viewDistance, 0.01); // 加0.01避免完全垂直
+                    break;
+                case 'view-front':
+                    camera.position.set(0, 0, viewDistance);
+                    break;
+                case 'view-side':
+                    camera.position.set(viewDistance, 0, 0);
+                    break;
+                
+                // 處理透明度 (操作 targetModel)
+                case 'opacity-1':
+                    targetModel.material.transparent = false;
+                    targetModel.material.opacity = 1.0;
+                    break;
+                case 'opacity-0.5':
+                    targetModel.material.transparent = true;
+                    targetModel.material.opacity = 0.5;
+                    break;
+                case 'opacity-0.1':
+                    targetModel.material.transparent = true;
+                    targetModel.material.opacity = 0.1;
+                    break;
+            }
+            
+            // 如果材質被修改，設定 needsUpdate
+            if (action.startsWith('opacity')) {
+                targetModel.material.needsUpdate = true;
+            }
+
+            // 更新相機目標
+            if (action.startsWith('view')) {
+                controls.target.set(0, 0, 0);
+            }
+
+            menu.style.display = 'none';
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

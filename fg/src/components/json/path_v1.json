@@ -1,0 +1,169 @@
+{
+  "Path": [
+    {
+      "icon": "mdi-home-map-marker",
+      "title": "預覽頁面",
+      "path": "/view"
+    },
+    {
+      "icon": "mdi-border-color",
+      "title": "編輯頁面",
+      "value": "Config",
+      "child": [
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-1",
+          "path": "/edit/1"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-2",
+          "path": "/edit/2"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-3",
+          "path": "/edit/3"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-4",
+          "path": "/edit/4"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-5",
+          "path": "/edit/5"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-6",
+          "path": "/edit/6"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-7",
+          "path": "/edit/7"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-8",
+          "path": "/edit/8"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-9",
+          "path": "/edit/9"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-10",
+          "path": "/edit/10"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-11",
+          "path": "/edit/11"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-12",
+          "path": "/edit/12"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-13",
+          "path": "/edit/13"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-14",
+          "path": "/edit/14"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-15",
+          "path": "/edit/15"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-16",
+          "path": "/edit/16"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-17",
+          "path": "/edit/17"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-18",
+          "path": "/edit/18"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-19",
+          "path": "/edit/19"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-20",
+          "path": "/edit/20"
+        }
+      ]
+    },
+    {
+      "icon": "mdi-handshake",
+      "title": "支援模組",
+      "value": "Mod",
+      "child": []
+    },
+    {
+      "icon": "mdi-swap-horizontal",
+      "title": "通訊協議",
+      "path": "/protocols"
+    },
+    {
+      "icon": "mdi-hexagon-multiple",
+      "title": "設定點位",
+      "path": "/datapoint"
+    },
+    {
+      "icon": "mdi-hexagon-multiple",
+      "title": "設定點位(新)",
+      "path": "/datapoint_v2"
+    },
+    {
+      "icon": "mdi-history",
+      "title": "紀錄表歷史",
+      "path": "/record_history"
+    },
+    {
+      "icon": "mdi-history",
+      "title": "曲線圖",
+      "path": "/linechart"
+    },
+    {
+      "icon": "mdi-account-details",
+      "title": "組織與用戶 (新)",
+      "path": "/organize_user_setting"
+    },
+    {
+      "icon": "mdi-account-details",
+      "title": "帳戶設定",
+      "path": "/account"
+    },
+    {
+      "icon": "mdi-account-details",
+      "title": "組織列表",
+      "value": "Organize",
+      "child": [
+        {
+          "icon": "mdi-blank",
+          "title": "系統管理員",
+          "path": "/organize/sysadmin"
+        }
+      ]
+    }
+  ]
+}

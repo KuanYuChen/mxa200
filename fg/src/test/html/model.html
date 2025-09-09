@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@latest/dist/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css" crossorigin="anonymous">
+
+    <style>
+        #prompt_textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px 16px;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            resize: none;
+            margin-top: 10px;
+        }
+
+        .model_btn {
+            border-radius: 20px;
+            padding: 4px 8px;
+            border: 2px solid #ccc;
+        }
+    </style>
+
+    <script type="module">
+        import { pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@latest";
+
+        let generator = undefined;
+        let cached_output = "";
+
+        const status_ele = document.getElementById("status");
+        const init_btn_ele = document.getElementById("init_btn");
+        const infer_btn_ele = document.getElementById("infer_btn");
+        const result_ele = document.getElementById("result");
+        const prompt_ele = document.getElementById("prompt_textarea");
+
+        async function initial_handler() {
+            status_ele.textContent = "Initializing...";
+            init_btn_ele.disabled = true;
+            await initial("text-generation",
+                "onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX",
+                { dtype: "q4f16", device: "webgpu" });
+            status_ele.textContent = "Ready";
+            infer_btn_ele.disabled = false;
+        }
+
+        async function infer_handler() {
+            status_ele.textContent = "Infering...";
+            result_ele.textContent = "";
+            infer_btn_ele.disabled = true;
+            cached_output = "";
+            await generate(prompt_ele.value);
+            status_ele.textContent = "Ready";
+            infer_btn_ele.disabled = false;
+        }
+
+        async function initial(task, mode_name, config) {
+            generator = await pipeline(
+                task,
+                mode_name,
+                config,
+            );
+        }
+
+        async function generate(prompt) {
+            if (generator === undefined) {
+                return;
+            }
+
+            // Define the list of messages
+            const messages = [
+                { role: "user", content: prompt },
+            ];
+
+            // Create text streamer
+            const streamer = new TextStreamer(generator.tokenizer, {
+                skip_prompt: true,
+                callback_function: (text) => {
+                    cached_output += text;
+                    cached_output = DOMPurify.sanitize(cached_output);
+                    result_ele.innerHTML = cached_output;
+                    renderMathInElement(result_ele, {
+                        // customised options
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true }
+                        ],
+                        // • rendering keys, e.g.:
+                        throwOnError: false
+                    });
+                    result_ele.innerHTML = marked.parse(result_ele.innerHTML)
+                }, // Optional callback function
+            });
+
+            return generator(messages, { max_new_tokens: 1024, do_sample: false, streamer });
+        }
+
+        init_btn_ele.addEventListener("click", initial_handler);
+        infer_btn_ele.addEventListener("click", infer_handler);
+    </script>
+
+
+</head>
+
+<body>
+
+    <h1 id="status">Uninitialized</h1>
+    <button id="init_btn" class="model_btn" >Initial</button>
+    <button id="infer_btn" class="model_btn" disabled>Start</button>
+    <div>
+        <textarea id="prompt_textarea" rows="4" cols="50">Solve the equation: x^2 - 3x + 2 = 0</textarea>
+    </div>
+    <p id="result"></p>
+</body>
+
+</html>

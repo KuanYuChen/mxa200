@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js 整合功能：模型加邊框</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #info {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-family: sans-serif;
+      z-index: 10;
+    }
+
+    #context-menu {
+      display: none;
+      position: absolute;
+      background-color: #f9f9f9;
+      border: 1px solid #ccc;
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      min-width: 160px;
+      border-radius: 5px;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    #context-menu ul {
+      list-style: none;
+      margin: 0;
+      padding: 5px 0;
+    }
+
+    #context-menu li {
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #context-menu li:hover {
+      background-color: #007bff;
+      color: white;
+    }
+
+    #context-menu hr {
+      border: 0;
+      border-top: 1px solid #e0e0e0;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="info">模型匯入、右鍵Menu操作、模型上方閃爍紅點、雙擊可閃爍</div>
+  <div id="context-menu">
+    <ul>
+      <li data-action="view-top">頂視圖 (Top)</li>
+      <li data-action="view-front">前視圖 (Front)</li>
+      <li data-action="view-side">側視圖 (Side)</li>
+      <hr>
+      <li data-action="opacity-1">不透明 (Opaque)</li>
+      <li data-action="opacity-0.5">半透明 (Translucent)</li>
+      <hr>
+      <li data-action="reset-selection">清除所有閃爍</li>
+    </ul>
+  </div>
+  <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+    // --- 基本設定 ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222233);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(10, 10, 10);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    directionalLight.position.set(1, 1, 1).normalize();
+    scene.add(directionalLight);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // --- 全域變數 ---
+    let targetModel = null;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const clock = new THREE.Clock();
+    const highlightedFaces = [
+      { faceIndex: 92, flash: true }, { faceIndex: 93, flash: true }, 
+      { faceIndex: 234, flash: true }, { faceIndex: 235, flash: true }, 
+      { faceIndex: 290, flash: true }, { faceIndex: 291, flash: true }, 
+      { faceIndex: 342, flash: true }, { faceIndex: 343, flash: true }, 
+      { faceIndex: 390, flash: true }, { faceIndex: 391, flash: true }, 
+      { faceIndex: 448, flash: true }, { faceIndex: 449, flash: true }
+    ];
+    const modelBaseColor = new THREE.Color(0x0099ff);
+    const highlightColor = new THREE.Color('red');
+    const menu = document.getElementById('context-menu'); // 獲取右鍵選單的DOM元素
+
+    // --- STL 載入 ---
+    const loader = new STLLoader();
+    loader.load('my_model.stl', function (geometry) {
+      // 步驟 1: 創建實心模型
+      const vertexCount = geometry.attributes.position.count;
+      const colors = [];
+      for (let i = 0; i < vertexCount; i++) { colors.push(modelBaseColor.r, modelBaseColor.g, modelBaseColor.b); }
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geometry.setAttribute('originalColor', geometry.attributes.color.clone());
+      const material = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 100 });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      // 步驟 2: 創建邊框模型
+      const edges = new THREE.EdgesGeometry(geometry, 15);
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0x000000,
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1
+      });
+      const edgesMesh = new THREE.LineSegments(edges, lineMaterial);
+
+      // 步驟 3: 將實心模型和邊框模型放入一個 Group 中
+      const modelGroup = new THREE.Group();
+      modelGroup.add(mesh);
+      modelGroup.add(edgesMesh);
+
+      // 步驟 4: 對整個 Group 進行置中和添加
+      geometry.computeBoundingBox();
+      const center = new THREE.Vector3();
+      geometry.boundingBox.getCenter(center);
+      modelGroup.position.sub(center);
+      scene.add(modelGroup);
+
+      // 將實心模型設為互動目標
+      targetModel = mesh;
+    });
+
+    // --- 事件監聽器 ---
+
+    /**
+     * 處理滑鼠雙擊事件，用於選取或取消選取模型上的面。
+     * @param {MouseEvent} event - 滑鼠事件對象
+     */
+    function onMouseDoubleClick(event) {
+      if (!targetModel) return;
+
+      // 將螢幕座標轉換為 Three.js 的標準化設備座標
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+      // 從相機發出光線投射
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(targetModel);
+
+      if (intersects.length > 0) {
+        const faceIndex = intersects[0].faceIndex;
+        const existingIndex = highlightedFaces.findIndex(item => item.faceIndex === faceIndex);
+
+        if (existingIndex !== -1) {
+          // 如果面已存在於陣列中，則將其移除並恢復顏色
+          highlightedFaces.splice(existingIndex, 1);
+          restoreFaceColor(faceIndex);
+        } else {
+          // 如果面不存在，則將其加入陣列
+          highlightedFaces.push({ faceIndex: faceIndex, flash: true });
+        }
+        console.log("選取位置: ", highlightedFaces);
+      }
+    }
+    renderer.domElement.addEventListener('dblclick', onMouseDoubleClick);
+
+    /**
+     * 處理右鍵點擊事件，顯示自訂選單。
+     * @param {MouseEvent} event - 滑鼠事件對象
+     */
+    function onContextMenu(event) {
+      event.preventDefault(); // 阻止瀏覽器預設的右鍵選單
+      menu.style.top = `${event.clientY}px`;
+      menu.style.left = `${event.clientX}px`;
+      menu.style.display = 'block';
+    }
+    renderer.domElement.addEventListener('contextmenu', onContextMenu);
+
+    /**
+     * 處理全域點擊事件，用於在點擊非選單區域時隱藏選單。
+     * @param {MouseEvent} event - 滑鼠事件對象
+     */
+    function onWindowClick(event) {
+      // 如果點擊的目標不是選單本身或其子元素，則隱藏選單
+      if (!menu.contains(event.target)) {
+        menu.style.display = 'none';
+      }
+    }
+    window.addEventListener('click', onWindowClick);
+
+    /**
+     * 處理自訂選單的點擊事件，執行對應的操作。
+     * @param {MouseEvent} event - 滑鼠事件對象
+     */
+    function onMenuClick(event) {
+      const action = event.target.dataset.action; // 獲取 data-action 屬性的值
+      if (!action) return;
+
+      // 安全檢查，防止在模型載入前操作
+      if (!targetModel && (action.startsWith('opacity') || action === 'reset-selection')) {
+        alert("模型尚未載入完成！");
+        menu.style.display = 'none';
+        return;
+      }
+
+      // 動態計算一個合適的相機觀察距離
+      let viewDistance = 150;
+      if (targetModel) {
+        const box = new THREE.Box3().setFromObject(targetModel);
+        const size = box.getSize(new THREE.Vector3());
+        const modelSize = Math.max(size.x, size.y, size.z);
+        viewDistance = modelSize > 0 ? modelSize * 1.5 : 150;
+      }
+
+      // 根據 action 執行不同操作
+      switch (action) {
+        case 'view-top': camera.position.set(0, viewDistance, 0.01); break;
+        case 'view-front': camera.position.set(0, 0, viewDistance); break;
+        case 'view-side': camera.position.set(viewDistance, 0, 0); break;
+        case 'opacity-1':
+          targetModel.material.transparent = false;
+          targetModel.material.opacity = 1.0;
+          targetModel.material.needsUpdate = true;
+          break;
+        case 'opacity-0.5':
+          targetModel.material.transparent = true;
+          targetModel.material.opacity = 0.5;
+          targetModel.material.needsUpdate = true;
+          break;
+        case 'reset-selection':
+          // 遍歷所有高亮的面並恢復其顏色
+          for (const item of highlightedFaces) {
+            restoreFaceColor(item.faceIndex);
+          }
+          // 清空高亮陣列
+          highlightedFaces.length = 0;
+          console.log("所有閃爍已清除。");
+          break;
+      }
+
+      // 如果是視圖操作，則更新控制器目標
+      if (action.startsWith('view')) {
+        controls.target.set(0, 0, 0);
+      }
+
+      // 點擊後隱藏選單
+      menu.style.display = 'none';
+    }
+    menu.addEventListener('click', onMenuClick);
+
+    // --- 幫助函式 ---
+
+    /**
+     * 將指定索引的面的顏色恢復為原始顏色。
+     * @param {number} faceIndex - 要恢復的面的索引
+     */
+    function restoreFaceColor(faceIndex) {
+      if (!targetModel) return;
+      const geometry = targetModel.geometry;
+      const colorAttribute = geometry.attributes.color;
+      const originalColorAttribute = geometry.attributes.originalColor;
+      const face = getFaceVertices(geometry, faceIndex);
+
+      if (!face || !originalColorAttribute) return;
+
+      colorAttribute.setXYZ(face.a, originalColorAttribute.getX(face.a), originalColorAttribute.getY(face.a), originalColorAttribute.getZ(face.a));
+      colorAttribute.setXYZ(face.b, originalColorAttribute.getX(face.b), originalColorAttribute.getY(face.b), originalColorAttribute.getZ(face.b));
+      colorAttribute.setXYZ(face.c, originalColorAttribute.getX(face.c), originalColorAttribute.getY(face.c), originalColorAttribute.getZ(face.c));
+
+      colorAttribute.needsUpdate = true;
+    }
+
+    /**
+     * 根據面的索引，獲取構成該面的三個頂點的索引。
+     * @param {THREE.BufferGeometry} geometry - 模型的幾何體
+     * @param {number} faceIndex - 面的索引
+     * @returns {{a: number, b: number, c: number}} - 包含三個頂點索引的對象
+     */
+    function getFaceVertices(geometry, faceIndex) {
+      if (geometry.index) {
+        // 對於索引幾何體 (indexed geometry)
+        return {
+          a: geometry.index.getX(faceIndex * 3),
+          b: geometry.index.getX(faceIndex * 3 + 1),
+          c: geometry.index.getX(faceIndex * 3 + 2)
+        };
+      } else {
+        // 對於非索引幾何體 (non-indexed geometry)
+        return {
+          a: faceIndex * 3,
+          b: faceIndex * 3 + 1,
+          c: faceIndex * 3 + 2
+        };
+      }
+    }
+
+    // --- 動畫迴圈 ---
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+
+      // 閃爍邏輯
+      if (targetModel && highlightedFaces.length > 0) {
+        const blinkAlpha = (Math.sin(clock.getElapsedTime() * 6) + 1) / 2;
+        const tempColor = new THREE.Color();
+        const geometry = targetModel.geometry;
+        const colorAttribute = geometry.attributes.color;
+
+        tempColor.copy(modelBaseColor).lerp(highlightColor, blinkAlpha);
+
+        for (const highlightedItem of highlightedFaces) {
+          if (highlightedItem.flash) {
+            const faceIndex = highlightedItem.faceIndex;
+            const face = getFaceVertices(geometry, faceIndex);
+
+            colorAttribute.setXYZ(face.a, tempColor.r, tempColor.g, tempColor.b);
+            colorAttribute.setXYZ(face.b, tempColor.r, tempColor.g, tempColor.b);
+            colorAttribute.setXYZ(face.c, tempColor.r, tempColor.g, tempColor.b);
+          }
+        }
+        colorAttribute.needsUpdate = true;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+
+</html>

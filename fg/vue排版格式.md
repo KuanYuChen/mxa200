@@ -1,0 +1,1 @@
+script => 檔案import => props/components => data => computed => watch => created => mounted => beforeUnmount => methods

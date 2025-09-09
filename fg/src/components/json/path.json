@@ -1,0 +1,232 @@
+{
+  "Path": [
+    {
+      "icon": "mdi-home-map-marker",
+      "title": "預覽頁面",
+      "path": "/view"
+    },
+    {
+      "icon": "mdi-border-color",
+      "title": "編輯頁面",
+      "value": "Config",
+      "child": [
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-1",
+          "path": "/edit/1"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-2",
+          "path": "/edit/2"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-3",
+          "path": "/edit/3"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-4",
+          "path": "/edit/4"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-5",
+          "path": "/edit/5"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-6",
+          "path": "/edit/6"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-7",
+          "path": "/edit/7"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-8",
+          "path": "/edit/8"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-9",
+          "path": "/edit/9"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-10",
+          "path": "/edit/10"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-11",
+          "path": "/edit/11"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-12",
+          "path": "/edit/12"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-13",
+          "path": "/edit/13"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-14",
+          "path": "/edit/14"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-15",
+          "path": "/edit/15"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-16",
+          "path": "/edit/16"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-17",
+          "path": "/edit/17"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-18",
+          "path": "/edit/18"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-19",
+          "path": "/edit/19"
+        },
+        {
+          "icon": "mdi-checkbox-multiple-blank-outline",
+          "title": "編輯頁-20",
+          "path": "/edit/20"
+        }
+      ]
+    },
+    {
+      "icon": "mdi-handshake",
+      "title": "資料收集",
+      "value": "Data",
+      "child": [
+        {
+          "icon": "mdi-swap-horizontal",
+          "title": "通訊協議",
+          "path": "/protocols"
+        },
+        {
+          "icon": "mdi-hexagon-multiple",
+          "title": "點位設定",
+          "path": "/datapoint"
+        }
+      ]
+    },
+    {
+      "icon": "mdi-message-outline",
+      "title": "通知中心",
+      "value": "Message",
+      "child": [
+        {
+          "icon": "mdi-message-badge-outline",
+          "title": "事件",
+          "path": "/event"
+        },
+        {
+          "icon": "mdi-alarm-light-outline",
+          "title": "告警",
+          "path": "/alarm"
+        }
+      ]
+    },
+    {
+      "icon": "mdi-history",
+      "title": "日誌",
+      "path": "/record_history"
+    },
+    {
+      "icon": "mdi-chart-areaspline",
+      "title": "曲線圖",
+      "path": "/linechart"
+    },
+    {
+      "icon": "mdi-account-details",
+      "title": "用戶",
+      "path": "/organize_user_setting"
+    },
+    {
+      "icon": "mdi-cog-outline",
+      "title": "系統",
+      "value": "System",
+      "child": [
+        {
+          "icon": "mdi-numeric-1-circle-outline",
+          "title": "排程",
+          "path": "/schedule"
+        },
+        {
+          "icon": "mdi-numeric-2-circle-outline",
+          "title": "時段",
+          "path": "/time_range"
+        },
+        {
+          "icon": "mdi-numeric-3-circle-outline",
+          "title": "推播",
+          "path": "/notify"
+        },
+        {
+          "icon": "mdi-numeric-4-circle-outline",
+          "title": "備份/還原",
+          "path": "/backup_restore"
+        },
+        {
+          "icon": "mdi-numeric-5-circle-outline",
+          "title": "系統設定",
+          "path": "/system_config"
+        }
+      ]
+    },
+    {
+      "icon": "mdi-handshake",
+      "title": "模組",
+      "value": "Mod",
+      "child": []
+    },
+    {
+      "icon": "mdi-handshake",
+      "title": "歷史曲線圖",
+      "value": "HistoryChart",
+      "child": []
+    },
+    {
+      "icon": "mdi-handshake",
+      "title": "資產管理",
+      "value": "AssetManagement",
+      "child": []
+    },
+    {
+      "icon": "mdi-handshake",
+      "title": "其他整合",
+      "value": "Other",
+      "child": [
+        {
+          "icon": "mdi-door-open",
+          "title": "門禁",
+          "path": "/access_control"
+        },
+        {
+          "icon": "mdi-video-outline",
+          "title": "影像",
+          "path": "/media"
+        }
+      ]
+    }
+  ]
+}
