@@ -1,7 +1,0 @@
-{
-  "enable": true,
-  "port": 5020,
-  "slave_id": 1,
-  "max_points": 300,
-  "start_addr": 1
-}
