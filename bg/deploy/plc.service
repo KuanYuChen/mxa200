@@ -1,0 +1,48 @@
+[Unit]
+Description=PLC Modbus TCP Reader Service
+Documentation=PLC IoT Agent for Modbus TCP communication
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+User=root
+Group=root
+
+# 工作目錄設定為 /opt/mxa200
+WorkingDirectory=/opt/mxa200
+
+# 執行檔案路徑 (ARM64 版本，適用於 i.MX8)
+ExecStart=/opt/mxa200/plc
+
+# 環境變數
+Environment=GIN_MODE=release
+
+# 確保 PLC 程式路徑存在
+ExecStartPre=/bin/bash -c 'test -x /opt/mxa200/plc || (echo "Error: /opt/mxa200/plc not found or not executable" && exit 1)'
+
+# 日誌設定
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=plc-service
+
+# 安全設定
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/mxa200 /var/log /tmp
+
+# 資源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 當服務停止時的處理
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

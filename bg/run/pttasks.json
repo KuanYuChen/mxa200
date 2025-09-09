@@ -1,0 +1,45 @@
+[
+  {
+    "name": "rus_test1",
+    "function": "read_discrete_inputs",
+    "address": 8755,
+    "quantity": 3,
+    "interval_ms": 2000,
+    "protocoluuid": "396b4bda-8eb3-46e9-801f-1a10a90252e9",
+    "ptuuids": [
+      "0ba78c1a-3570-422d-ac93-d06f8687b409",
+      "0367e074-ac64-40ed-a113-39e7f3888d3d",
+      "00ceecb2-1753-4127-a87d-56c76f57fd22"
+    ],
+    "uuid": "396b4bda-8eb3-46e9-801f-1a10a90252e9",
+    "slaveid": 5
+  },
+  {
+    "name": "plc_tcp_test",
+    "function": "read_discrete_inputs",
+    "address": 5566,
+    "quantity": 3,
+    "interval_ms": 2000,
+    "protocoluuid": "49b72b9a-7643-45f6-8394-35e394800470",
+    "ptuuids": [
+      "00598419-1b02-483a-9f43-52c9393ef9c4",
+      "07c771fd-6151-4aed-8a25-9bbbdfa2b3c0",
+      "0367e074-ac64-40ed-a113-39e7f3888d3d"
+    ],
+    "uuid": "49b72b9a-7643-45f6-8394-35e394800470",
+    "slaveid": 1
+  },
+  {
+    "name": "testtest",
+    "function": "read_discrete_inputs",
+    "address": 1231,
+    "quantity": 1,
+    "interval_ms": 1000,
+    "protocoluuid": "49b72b9a-7643-45f6-8394-35e394800470",
+    "ptuuids": [
+      "01abd237-602f-4e57-97a2-2931980833e3"
+    ],
+    "uuid": "49b72b9a-7643-45f6-8394-35e394800470",
+    "slaveid": 1
+  }
+]

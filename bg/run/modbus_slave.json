@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "port": 5020,
+  "max_registers": 1000,
+  "address_offset": 1,
+  "auto_map_enabled": true,
+  "update_interval_ms": 1000
+}

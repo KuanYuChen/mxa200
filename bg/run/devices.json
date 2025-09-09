@@ -1,0 +1,39 @@
+[
+  {
+    "name": "PLC",
+    "ip": "192.168.15.51",
+    "port": 502,
+    "enable": true,
+    "protocol": "modbus_tcp",
+    "uuid": "49b72b9a-7643-45f6-8394-35e394800470"
+  },
+  {
+    "name": "SIM_001",
+    "ip": "192.168.15.121",
+    "port": 1502,
+    "enable": true,
+    "protocol": "modbus_tcp",
+    "uuid": "1df52bc1-a175-4cf5-b39d-beef47d8a191"
+  },
+  {
+    "name": "SNMP_JQTEK",
+    "ip": "192.168.15.100",
+    "port": 161,
+    "enable": true,
+    "protocol": "snmp",
+    "community": "jqtek",
+    "uuid": "e4c8f1d3-3e88-48eb-9484-b2be5af133ed"
+  },
+  {
+    "name": "RTU",
+    "port": 161,
+    "enable": true,
+    "protocol": "modbus_rtu",
+    "uuid": "396b4bda-8eb3-46e9-801f-1a10a90252e9",
+    "com": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "databits": 8,
+    "parity": "N",
+    "stopbits": 1
+  }
+]

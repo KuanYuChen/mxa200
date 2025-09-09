@@ -1,0 +1,13 @@
+[
+  {
+    "name": "RTU",
+    "com": "/dev/ttyS0",
+    "enable": true,
+    "protocol": "modbus_rtu",
+    "baudrate": 9600,
+    "databits": 8,
+    "parity": "N",
+    "stopbits": 1,
+    "uuid": "92610415-1da7-4747-a794-1b6fe0f9b0be"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "name": "PLC",
+    "ip": "192.168.15.51",
+    "port": 502,
+    "enable": true,
+    "protocol": "modbus_tcp",
+    "uuid": "49b72b9a-7643-45f6-8394-35e394800470"
+  },
+  {
+    "name": "SIM_001",
+    "ip": "192.168.15.121",
+    "port": 1502,
+    "enable": true,
+    "protocol": "modbus_tcp",
+    "uuid": "1df52bc1-a175-4cf5-b39d-beef47d8a191"
+  },
+  {
+    "name": "RTU",
+    "com": "/dev/ttyUSB0",
+    "enable": true,
+    "protocol": "modbus_rtu",
+    "baudrate": 9600,
+    "databits": 8,
+    "parity": "N",
+    "stopbits": 1,
+    "uuid": "92610415-1da7-4747-a794-1b6fe0f9b0be"
+  }
+]

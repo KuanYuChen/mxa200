@@ -1,0 +1,66 @@
+2025/09/07 15:33:20 設定虛擬點位數量為: 300
+[WARN] Task "TP100溫度計_area1" 指向不存在的裝置 UUID=85615194-e7eb-4c48-9335-d9cc03ba8685
+[WARN] Task "TP100溫度計_area2" 指向不存在的裝置 UUID=a7065961-c26a-4ac1-978b-00bfdc60de27
+[WARN] Task "X_接點" 指向不存在的裝置 UUID=7f711307-904b-4617-9ed8-f2e3999c943a
+[WARN] Task "table_001" 指向不存在的裝置 UUID=9ecd43bf-df2e-42f9-80c1-d9c0a1f7587f
+[WARN] Task "usp_status" 指向不存在的裝置 UUID=2e8d810d-5bc6-48ff-9ec5-546c55343189
+[WARN] Task "plc_d11" 指向不存在的裝置 UUID=933dd262-f2ae-4668-9e8a-6b5b323ee782
+2025/09/07 15:33:20 Initialized 500 point states
+2025/09/07 15:33:20 ---------------------------------------------------------------------
+App Version: 1.0.0, Feature: standard, Commit: none, BuildTime: unknown
+2025/09/07 15:33:20 ---------------------------------------------------------------------
+2025/09/07 15:33:20 建立 Modbus : PLC Protocol: modbus_tcp
+2025/09/07 15:33:20 Modbus TCP to 192.168.15.51 port 502
+2025/09/07 15:33:20 建立 Modbus : SIM_001 Protocol: modbus_tcp
+2025/09/07 15:33:20 Modbus TCP to 192.168.15.121 port 1502
+2025/09/07 15:33:20 建立 Modbus : RTU Protocol: modbus_rtu
+2025/09/07 15:33:20 Modbus RTU on /dev/ttyUSB0 baud 9600 dataBits 8 parity N stopBits 1
+2025/09/07 15:33:20 Modbus RTU on /dev/ttyUSB0 baud 9600 dataBits 8 parity N stopBits 1
+2025/09/07 15:33:20 正在從配置初始化設備狀態...
+2025/09/07 15:33:20 設備狀態初始化完成：找到 4 個設備
+2025/09/07 15:33:20 [deviceStates]: map[PLC:0xc0001d4000 RTU:0xc0001d42a0 SIM_001:0xc0001d40e0 SNMP_JQTEK:0xc0001d41c0]
+2025/09/07 15:33:20 啟動 Modbus Slave 服務，埠號: 5022
+2025/09/07 15:33:20 Mapped 130 virtual points to Modbus addresses (starting from 1)
+2025/09/07 15:33:20 ✅ Modbus Slave 服務已啟動
+Detected CPU Cores: 2, Start Worker Pool: 4
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/sysinfo              --> main.sysInfo (3 handlers)
+[GIN-debug] GET    /api/devices              --> main.listDevices (3 handlers)
+[GIN-debug] POST   /api/devices              --> main.addDevice (3 handlers)
+[GIN-debug] PUT    /api/devices/:name        --> main.updateDevice (3 handlers)
+[GIN-debug] DELETE /api/devices/:name        --> main.deleteDevice (3 handlers)
+[GIN-debug] POST   /api/devices/:name/start  --> main.startDevice (3 handlers)
+[GIN-debug] POST   /api/devices/:name/stop   --> main.stopDevice (3 handlers)
+[GIN-debug] GET    /api/points               --> main.getpointStates (3 handlers)
+[GIN-debug] GET    /api/points/:uuid         --> main.getPointByUUID (3 handlers)
+[GIN-debug] PUT    /api/points/:uuid         --> main.updatePointByUUID (3 handlers)
+[GIN-debug] DELETE /api/points/:uuid         --> main.deletePointByUUID (3 handlers)
+[GIN-debug] GET    /api/vpoints              --> main.getvpointVal (3 handlers)
+[GIN-debug] GET    /api/modbus-slave/status  --> main.getModbusSlaveStatusAPI (3 handlers)
+[GIN-debug] GET    /api/modbus-slave/config  --> main.getModbusSlaveConfigAPI (3 handlers)
+[GIN-debug] PUT    /api/modbus-slave/config  --> main.updateModbusSlaveConfigAPI (3 handlers)
+[GIN-debug] POST   /api/modbus-slave/start   --> main.startModbusSlaveAPI (3 handlers)
+[GIN-debug] POST   /api/modbus-slave/stop    --> main.stopModbusSlaveAPI (3 handlers)
+[GIN-debug] POST   /api/modbus-slave/remap   --> main.remapVirtualPointsAPI (3 handlers)
+[GIN-debug] POST   /api/modbus-slave/mapping --> main.addPointMappingAPI (3 handlers)
+[GIN-debug] DELETE /api/modbus-slave/mapping/:uuid --> main.removePointMappingAPI (3 handlers)
+[GIN-debug] GET    /api/tasks                --> main.listTasks (3 handlers)
+[GIN-debug] POST   /api/tasks                --> main.addTask (3 handlers)
+[GIN-debug] PUT    /api/tasks/:uuid          --> main.updateTask (3 handlers)
+[GIN-debug] DELETE /api/tasks/:uuid          --> main.deleteTask (3 handlers)
+[GIN-debug] GET    /api/tasks/:uuid          --> main.getTask (3 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8081
+2025/09/07 15:33:20 Modbus Slave server started on port 5022
+[GIN] 2025/09/07 - 15:33:42 | 200 |     405.911µs |             ::1 | GET      "/api/modbus-slave/status"
+2025/09/07 15:37:03 ⏹️ 關閉中...
+2025/09/07 15:37:05 正在關閉 Modbus 連線: RTU
+2025/09/07 15:37:05 正在關閉 Modbus 連線: PLC
+2025/09/07 15:37:05 正在關閉 Modbus 連線: SIM_001
+2025/09/07 15:37:05 ✅ 所有連線已關閉
