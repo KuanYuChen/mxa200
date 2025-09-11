@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -134,6 +133,8 @@ func SavePoints(path string, pts []VirtualPoint) error {
 	return os.WriteFile(path, b, 0644)
 }
 
+const ()
+
 // GenDefaultPoints 系統啟動時如未存在 points.json，自動產生預設的虛擬點
 func GenDefaultPoints(n int) []VirtualPoint {
 	out := make([]VirtualPoint, 0, n)
@@ -144,7 +145,7 @@ func GenDefaultPoints(n int) []VirtualPoint {
 			UUID:        u,
 			Enable:      false,
 			Protocol:    "",
-			Name:        fmt.Sprintf("Point_%07d", i),
+			Name:        fmt.Sprintf("%s%07d", POINT_PREFIX, i),
 			Description: "",
 			Opt:         "NONE",
 			RealValue:   0.0,
@@ -159,6 +160,38 @@ func GenDefaultPoints(n int) []VirtualPoint {
 		})
 	}
 	return out
+}
+
+// getAvailableVirtualPointUUIDs 取得未被任務引用的 VirtualPoint UUID，依 idx 排序
+func getAvailableVirtualPointUUIDs(cfg *Config) []string {
+	used := make(map[string]bool)
+	// 收集所有任務已用到的 UUID
+	for _, task := range cfg.Tasks {
+		for _, uuid := range task.PTUUIDs {
+			used[uuid] = true
+		}
+	}
+	// 依 idx 排序 Points，並收集未被用到的 UUID
+	type idxUUID struct {
+		idx  int
+		uuid string
+	}
+	var available []idxUUID
+	for _, pt := range cfg.Points {
+		if !used[pt.UUID] {
+			available = append(available, idxUUID{pt.Idx, pt.UUID})
+		}
+	}
+	// 排序
+	sort.Slice(available, func(i, j int) bool {
+		return available[i].idx < available[j].idx
+	})
+	// 只回傳 UUID 陣列
+	result := make([]string, len(available))
+	for i, v := range available {
+		result[i] = v.uuid
+	}
+	return result
 }
 
 // GenDefaultPointsWithPreservedUUIDs 產生點位時保留指定的 UUID 和其完整屬性
@@ -192,9 +225,23 @@ func LoadDevices(path string) ([]DeviceProtocolConfig, error) {
 
 // LoadPtTasks 載入任務配置檔案 (pttasks.json)
 func LoadPtTasks(path string) ([]PointerTaskConfig, error) {
+
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		// 如果是檔案不存在，則自動建立空的 pttasks.json
+		if os.IsNotExist(err) {
+			empty := []byte("[]")
+			if werr := os.WriteFile(path, empty, 0644); werr != nil {
+				return nil, fmt.Errorf("自動建立空的 pttasks.json 失敗: %w", werr)
+			}
+			// 建立後再讀一次
+			b, err = os.ReadFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("自動建立後讀取 pttasks.json 仍失敗: %w", err)
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	var PtTasks []PointerTaskConfig
@@ -342,7 +389,18 @@ func LoadConfigFromSplit(devPath, pttaskPath string) (*Config, error) {
 	// 載入設備配置
 	devs, err := LoadDevices(devPath)
 	if err != nil {
-		return nil, fmt.Errorf("讀取 devices 失敗: %w", err)
+		// 若檔案不存在則自動建立空檔案
+		if os.IsNotExist(err) {
+			f, ferr := os.Create(devPath)
+			if ferr != nil {
+				return nil, fmt.Errorf("自動建立 devices.json 失敗: %w", ferr)
+			}
+			f.Write([]byte("[]"))
+			f.Close()
+			devs = []DeviceProtocolConfig{}
+		} else {
+			return nil, fmt.Errorf("讀取 devices 失敗: %w", err)
+		}
 	}
 
 	// 載入任務配置
@@ -354,7 +412,12 @@ func LoadConfigFromSplit(devPath, pttaskPath string) (*Config, error) {
 	// 合併設備與任務配置
 	cfg := MergeDevicesAndTasks(devs, tasks)
 	if len(cfg.Devices) == 0 {
-		return nil, errors.New("合併後沒有任何裝置")
+		// 回傳一個空的 Config 結構，不報錯
+		return &Config{
+			Devices: []DeviceProtocolConfig{},
+			Points:  []VirtualPoint{},
+			Tasks:   []PointerTaskConfig{},
+		}, nil
 	}
 	return cfg, nil
 }

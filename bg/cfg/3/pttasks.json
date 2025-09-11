@@ -1,0 +1,30 @@
+[
+  {
+    "name": "sim",
+    "function": "read_holding_registers",
+    "address": 100,
+    "quantity": 16,
+    "interval_ms": 1000,
+    "protocoluuid": "a2a1e33d-5c26-4f6e-b1de-1828b4e76c16",
+    "ptuuids": [
+      "583a6e15-9865-4bb2-a13c-700db20ca607",
+      "bfd129b2-4d37-4187-923e-050c36e204af",
+      "d817f575-d6e7-4d77-a4aa-23caba929dfb",
+      "30822674-bd6a-4dab-bdd9-a53cf528a3c0",
+      "ae0d070a-bbac-4cd8-9e8b-5415af288e10",
+      "87cae9d8-e97f-4e52-b95b-06fdb12b26aa",
+      "6a56cf44-9e7d-4453-a0ee-7597d118eddb",
+      "66bf1ae6-61a5-42d1-b16c-9e63af633362",
+      "8f8d9d99-5180-45a6-a519-f70f2a42d4ac",
+      "0d36adc3-d731-4b0f-93f6-f3de86436477",
+      "bbe9e5bb-cea2-4632-b706-2bc7b5255b67",
+      "b81987c8-468e-4944-bbc3-86c60d6f60fa",
+      "051b2752-d746-4107-ae82-62cb2376a0ca",
+      "0bdddfed-3867-49a3-ae97-7f7def1818f3",
+      "eea7383b-b1cb-43b3-9635-9d8e5edb6520",
+      "8807d7cf-452c-40ed-8918-372587aeabba"
+    ],
+    "uuid": "0acccf1e-40d0-48a7-b8f2-014c5ef8f13c",
+    "slaveid": 1
+  }
+]

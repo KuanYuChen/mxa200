@@ -28,6 +28,7 @@ var (
 	AllSchedules   []*TaskSchedule
 	schedMutex     sync.RWMutex
 	shutdownSignal chan struct{} // 新增關閉信號通道
+	reloadSignal   chan struct{} // 新增重新載入信號通道
 )
 
 // === 點位狀態（與 deviceStates 類似） ===
@@ -124,9 +125,12 @@ var bufferMutex sync.RWMutex
 // 這個函數會啟動指定數量的 goroutine，每個 goroutine 都會從 TaskQueue 中取出任務並執行
 // 每個工作者會不斷地從 TaskQueue 中取出任務，直到 TaskQueue 被關閉
 func StartWorkerPool(numWorkers int) {
+	log.Println("\n\n=== 啟動工作池 ===")
 	for i := 0; i < numWorkers; i++ {
+		log.Println("啟動工作者:", i)
 		go func(id int) {
 			for task := range TaskQueue {
+				log.Println("工作者", id, "執行任務:", task.DeviceName, task.PtTask.Name)
 				// deviceStates 由 webapi.go 全局維護
 				devState, ok := deviceStates[task.DeviceName]
 				if !ok {
@@ -142,12 +146,25 @@ func StartWorkerPool(numWorkers int) {
 	}
 }
 
+// ReloadSchedules 重新載入排程配置
+func ReloadSchedules() {
+	select {
+	case reloadSignal <- struct{}{}:
+		log.Println("🔄 已發送排程重新載入信號")
+	default:
+		log.Println("⚠️ 重新載入信號通道已滿，跳過此次重新載入請求")
+	}
+}
+
 // SchedulerLoopPrecise 是一個精確的排程器循環，使用時間戳來確保任務在正確的時間執行
 // 這個函數會在每次迴圈中檢查所有排程的執行時間，並將符合條件的任務放入 TaskQueue
 func SchedulerLoopPrecise() {
 	baseTime := time.Now().Truncate(time.Second)
+	var schedules []*TaskSchedule
+
+	// 初始載入排程
 	schedMutex.RLock()
-	schedules := make([]*TaskSchedule, len(AllSchedules))
+	schedules = make([]*TaskSchedule, len(AllSchedules))
 	copy(schedules, AllSchedules)
 	schedMutex.RUnlock()
 
@@ -157,6 +174,15 @@ func SchedulerLoopPrecise() {
 			// 收到關閉信號，安全退出
 			log.Println("Scheduler received shutdown signal, exiting...")
 			return
+		case <-reloadSignal:
+			// 收到重新載入信號，重新載入排程
+			log.Println("🔄 收到重新載入信號，正在重新載入排程...")
+			schedMutex.RLock()
+			schedules = make([]*TaskSchedule, len(AllSchedules))
+			copy(schedules, AllSchedules)
+			schedMutex.RUnlock()
+			log.Printf("✅ 排程重新載入完成，目前有 %d 個排程", len(schedules))
+			continue
 		default:
 			// 正常執行邏輯
 		}
@@ -209,6 +235,9 @@ func SchedulerLoopPrecise() {
 
 // 通用新增 Device 任務
 func AddDeviceToSchedule(dev DeviceProtocolConfig, enabled bool) {
+	schedMutex.Lock()
+	defer schedMutex.Unlock()
+
 	var client *ModbusClient = nil
 	hasModbus := false
 
@@ -238,6 +267,8 @@ func AddDeviceToSchedule(dev DeviceProtocolConfig, enabled bool) {
 		}
 		AllSchedules = append(AllSchedules, ts)
 	}
+
+	log.Printf("✅ 已將設備 %s 的 %d 個任務加入排程中", dev.Name, len(dev.Tasks))
 }
 
 // 初始化時
@@ -250,6 +281,100 @@ func InitSchedulesFromConfig(config *Config) {
 // API 新增時（Web 新增設備）
 func AddDeviceSchedules(dev DeviceProtocolConfig) {
 	AddDeviceToSchedule(dev, false) // 預設不啟用
+}
+
+// AddSingleTaskToSchedule 新增單個任務到排程中
+func AddSingleTaskToSchedule(deviceName string, task PointerTaskConfig, enabled bool) {
+	// 先檢查設備狀態，避免在持有排程鎖時再獲取狀態鎖
+	stateMutex.RLock()
+	deviceState, exists := deviceStates[deviceName]
+	if !exists {
+		stateMutex.RUnlock()
+		log.Printf("警告: 無法找到設備 %s，無法新增任務到排程", deviceName)
+		return
+	}
+
+	// 複製必要的設備配置信息
+	deviceConfig := deviceState.Config
+	stateMutex.RUnlock()
+
+	// 現在獲取排程鎖
+	schedMutex.Lock()
+	defer schedMutex.Unlock()
+
+	// 取得設備的 protocol 資訊
+	var client *ModbusClient = nil
+	hasModbus := false
+
+	protocol := deviceConfig.Protocol
+	if protocol == "" || protocol == "modbus_tcp" || protocol == "modbus_rtu" {
+		hasModbus = true
+	}
+
+	if hasModbus {
+		c, exists := modbusClientMap[deviceName]
+		if !exists {
+			c = NewModbusClientFromDevice(deviceConfig)
+			if c != nil {
+				modbusClientMap[deviceName] = c
+			}
+		}
+		client = c
+	}
+
+	// 創建新的任務排程
+	ts := &TaskSchedule{
+		DeviceName:   deviceName,
+		PtTask:       task,
+		Client:       client,
+		NextExecTime: time.Now().Add(time.Duration(task.IntervalMs) * time.Millisecond),
+		IntervalMs:   task.IntervalMs,
+		Enabled:      enabled,
+	}
+
+	AllSchedules = append(AllSchedules, ts)
+	log.Printf("✅ 已將任務 %s/%s 動態新增到排程中", deviceName, task.Name)
+}
+
+// RemoveSingleTaskFromSchedule 從排程中移除單個任務
+func RemoveSingleTaskFromSchedule(deviceName string, taskName string) {
+	schedMutex.Lock()
+	defer schedMutex.Unlock()
+
+	// 找到並移除對應的任務排程
+	for i := len(AllSchedules) - 1; i >= 0; i-- {
+		s := AllSchedules[i]
+		if s.DeviceName == deviceName && s.PtTask.Name == taskName {
+			// 從 slice 中移除該元素
+			AllSchedules = append(AllSchedules[:i], AllSchedules[i+1:]...)
+			log.Printf("✅ 已將任務 %s/%s 從排程中移除", deviceName, taskName)
+			return
+		}
+	}
+	log.Printf("⚠️ 未找到要移除的任務 %s/%s", deviceName, taskName)
+}
+
+// RemoveDeviceFromSchedule 從排程中移除設備的所有任務
+func RemoveDeviceFromSchedule(deviceName string) {
+	schedMutex.Lock()
+	defer schedMutex.Unlock()
+
+	removedCount := 0
+	// 從後往前遍歷，避免索引問題
+	for i := len(AllSchedules) - 1; i >= 0; i-- {
+		s := AllSchedules[i]
+		if s.DeviceName == deviceName {
+			// 從 slice 中移除該元素
+			AllSchedules = append(AllSchedules[:i], AllSchedules[i+1:]...)
+			removedCount++
+		}
+	}
+
+	if removedCount > 0 {
+		log.Printf("✅ 已將設備 %s 的 %d 個任務從排程中移除", deviceName, removedCount)
+	} else {
+		log.Printf("⚠️ 未找到設備 %s 的任務排程", deviceName)
+	}
 }
 
 // SetDeviceTasksEnabled 設定指定設備的所有任務是否啟用
@@ -267,14 +392,12 @@ func SetDeviceTasksEnabled(deviceName string, enabled bool) {
 	}
 }
 
-// ExecuteScheduledTask
-// func ExecuteScheduledTask(dev DeviceProtocolConfig, pttask PointerTaskConfig, deviceName string, client *ModbusClient) bool {
-
 func ExecuteScheduledTask(dev DeviceProtocolConfig, task ScheduledTask) bool {
 	var resultMap map[string]interface{}
 	var err error
 
-	// log.Println("執行任務:", dev.Name, task.PtTask.Name)
+	log.Println("執行任務:", dev.Name, task.PtTask.Name)
+
 	pttask := task.PtTask
 	deviceName := task.DeviceName
 	client := task.Client //modbus client or nil
@@ -285,13 +408,10 @@ func ExecuteScheduledTask(dev DeviceProtocolConfig, task ScheduledTask) bool {
 	switch protocol {
 	case "snmp":
 		resultMap, err = RunSNMPTask(dev, pttask)
-		break
 	case "modbus_rtu":
 		resultMap, err = RunModbusTask(client, pttask)
-		break
 	case "modbus_tcp":
 		resultMap, err = RunModbusTask(client, pttask)
-		break
 	default: //modbus
 		return false
 		// resultMap, err = RunModbusTask(client, pttask)
@@ -347,7 +467,7 @@ func ExecuteScheduledTask(dev DeviceProtocolConfig, task ScheduledTask) bool {
 	taskResultBuffer[deviceName][pttask.Name] = resultMap
 	bufferMutex.Unlock()
 
-	// log.Println("任務結果:", resultMap)
+	log.Println("任務結果:", resultMap)
 
 	for uuid, val := range resultMap {
 		// log.Println(uuid, val)

@@ -1,0 +1,13 @@
+[
+  {
+    "name": "sim_modbusTCP",
+    "ip": "192.168.15.121",
+    "port": 1502,
+    "enable": true,
+    "protocol": "modbus_tcp",
+    "uuid": "a2a1e33d-5c26-4f6e-b1de-1828b4e76c16",
+    "timeout": 1000,
+    "retry": 2,
+    "interval": 1000
+  }
+]

@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -17,6 +16,7 @@ const (
 	DEVICESFILENAME = "devices.json"
 	TASKSFILENAME   = "pttasks.json"
 	POINTSFILENAME  = "points.json"
+	POINT_PREFIX    = "Point_"
 	WEBSERVERPORT   = 8080
 )
 
@@ -142,13 +142,15 @@ func main() {
 
 	// Worker pool 與排程
 	TaskQueue = make(chan ScheduledTask, 4096)
-	shutdownSignal = make(chan struct{}) // 初始化關閉信號
+	shutdownSignal = make(chan struct{})  // 初始化關閉信號
+	reloadSignal = make(chan struct{}, 1) // 初始化重新載入信號（有緩衝）
 	InitSchedulesFromConfig(config)
 	InitDeviceStatesFromConfig(config) //
 
 	// return
 	// 根據 CPU 自動決定 worker 數
-	cpuCount := runtime.NumCPU()
+	//cpuCount := runtime.NumCPU()
+	cpuCount := 2 //cup數量
 	workerCount := cpuCount * 2
 	log.Printf("Detected CPU Cores: %d, Start Worker Pool: %d\n", cpuCount, workerCount)
 
@@ -158,7 +160,7 @@ func main() {
 
 	// 啟動 Gin REST API
 	r := gin.Default()
-	RegisterRoutes(r)
+	RegisterRoutes(r, config) // 傳遞 config 給路由註冊函數
 	go func() {
 		port := fmt.Sprintf(":%d", WEBSERVERPORT)
 		if err := r.Run(port); err != nil {

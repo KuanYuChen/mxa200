@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/gin-gonic/contrib/static"
@@ -35,8 +34,9 @@ var (
 //go:embed dist/*
 var embedFs embed.FS
 
-func RegisterRoutes(r *gin.Engine) {
+func RegisterRoutes(r *gin.Engine, cfg *Config) {
 	r.GET("/api/sysinfo", sysInfo)
+	r.GET("/api/reload", reloadSchedules)
 
 	r.GET("/api/devices", listDevices)
 	r.POST("/api/devices", addDevice)
@@ -53,7 +53,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.DELETE("/api/points/:uuid", deletePointByUUID)
 
 	r.GET("/api/vpoints", getvpointVal)
-	r.GET("/api/avpoints", getAvailableVirtualPoints)
+	r.GET("/api/avpoints", func(c *gin.Context) { getAvailableVirtualPoints(c, cfg) })
 
 	// 任務管理 API
 	r.GET("/api/tasks", listTasks)
@@ -126,6 +126,14 @@ func sysInfo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"Version": Version, "Module": Module})
 
+}
+
+func reloadSchedules(c *gin.Context) {
+	ReloadSchedules()
+	c.JSON(http.StatusOK, gin.H{
+		"message": "排程重新載入請求已發送",
+		"success": true,
+	})
 }
 
 func listDevices(c *gin.Context) {
@@ -315,46 +323,21 @@ func getvpointVal(c *gin.Context) {
 	c.JSON(http.StatusOK, virtualPointValueCache)
 }
 
-// getAvailableVirtualPoints 取得可用的虛擬點位UUID
-// 條件：name包含VP_、enable為false、description為"預設虛擬點"
-func getAvailableVirtualPoints(c *gin.Context) {
+// getAvailableVirtualPoints 取得依 idx 排序且未被任務引用的虛擬點位 UUID
+func getAvailableVirtualPoints(c *gin.Context, cfg *Config) {
 	// 從查詢參數獲取需要的數量，預設為1
 	countParam := c.DefaultQuery("count", "1")
 	count := 1
-	if c, err := strconv.Atoi(countParam); err == nil && c > 0 {
-		count = c
+	if n, err := strconv.Atoi(countParam); err == nil && n > 0 {
+		count = n
 	}
 
-	virtualPointMapMutex.RLock()
-	defer virtualPointMapMutex.RUnlock()
-
-	var availableUUIDs []string
-
-	// 遍歷所有虛擬點位，找到符合條件的
-	for uuid, point := range virtualPointMap {
-		log.Println("Checking point:", point.Name, "Enable:", point.Enable)
-		// 檢查條件：
-		// 1. name包含"VP_"
-		// 2. enable為false
-		// 3. description為"預設虛擬點"（根據實際資料調整）
-		if strings.Contains(point.Name, "Point_") &&
-			!point.Enable {
-			availableUUIDs = append(availableUUIDs, uuid)
-
-			// 如果已找到足夠的數量，停止搜尋
-			if len(availableUUIDs) >= count {
-				break
-			}
-		}
+	uuids := getAvailableVirtualPointUUIDs(cfg)
+	if len(uuids) > count {
+		uuids = uuids[:count]
 	}
-
-	// 限制返回的數量
-	if len(availableUUIDs) > count {
-		availableUUIDs = availableUUIDs[:count]
-	}
-
 	c.JSON(http.StatusOK, gin.H{
-		"uuids": availableUUIDs,
+		"uuids": uuids,
 	})
 }
 
@@ -700,6 +683,26 @@ func addTask(c *gin.Context) {
 		}
 	}
 
+	// 將被參考到的 points 的 enable 設為 true
+	if len(task.PTUUIDs) > 0 {
+		// 載入所有點位
+		points, err := LoadPoints(POINTSFILENAME)
+		if err == nil {
+			updated := false
+			for i := range points {
+				for _, uuid := range task.PTUUIDs {
+					if points[i].UUID == uuid && !points[i].Enable {
+						points[i].Enable = true
+						updated = true
+					}
+				}
+			}
+			if updated {
+				_ = SavePoints(POINTSFILENAME, points)
+			}
+		}
+	}
+
 	// 檢查任務名稱是否重複
 	for _, existingTask := range targetDevice.Config.Tasks {
 		if existingTask.Name == task.Name {
@@ -796,8 +799,14 @@ func updateTask(c *gin.Context) {
 		}
 	}
 
+	// 從排程中移除舊任務
+	RemoveSingleTaskFromSchedule(targetDevice.Config.Name, originalTask.Name)
+
 	// 更新任務
 	targetDevice.Config.Tasks[taskIndex] = updatedTask
+
+	// 將更新後的任務加入排程
+	AddSingleTaskToSchedule(targetDevice.Config.Name, updatedTask, targetDevice.Config.Enable)
 
 	// 儲存設定
 	if err := SaveSplit(DEVICESFILENAME, TASKSFILENAME); err != nil {
@@ -851,6 +860,9 @@ func deleteTask(c *gin.Context) {
 	targetDevice.Config.Tasks = append(
 		targetDevice.Config.Tasks[:taskIndex],
 		targetDevice.Config.Tasks[taskIndex+1:]...)
+
+	// 從排程中移除任務 (新增這行來同步移除排程中的任務)
+	RemoveSingleTaskFromSchedule(targetDevice.Config.Name, deletedTask.Name)
 
 	// 儲存設定
 	if err := SaveSplit(DEVICESFILENAME, TASKSFILENAME); err != nil {
