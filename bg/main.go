@@ -70,7 +70,7 @@ func showConfig(cfg Config) {
 	for _, dev := range cfg.Devices {
 		log.Printf("Device: %s, IP: %s, Protocol: %s, Enable: %v, Tasks: %d\n", dev.Name, dev.IP, dev.Protocol, dev.Enable, len(dev.Tasks))
 		for _, t := range dev.Tasks {
-			log.Printf("  Task: %s, Interval: %dms, DeviceUUID: %s, ProtocolUUID: %s, PTUUIDs: %d\n", t.Name, t.IntervalMs, t.DeviceUUID, t.ProtocolUUID, len(t.PTUUIDs))
+			log.Printf("  Task: %s, Interval: %dms, ProtocolUUID: %s, PTUUIDs: %d\n", t.Name, t.IntervalMs, t.ProtocolUUID, len(t.PTUUIDs))
 		}
 	}
 

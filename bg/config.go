@@ -49,7 +49,6 @@ type PointerTaskConfig struct {
 	ProtocolUUID string   `json:"protocoluuid,omitempty"` // 關聯到設備的 UUID（相容舊版）
 	PTUUIDs      []string `json:"ptuuids,omitempty"`      // 對應的虛擬點 UUID 列表
 	TaskUUID     string   `json:"uuid,omitempty"`         // 任務本身的唯一識別碼
-	DeviceUUID   string   `json:"device_uuid,omitempty"`  // 對應設備的 UUID（如果有明確指定）
 	SlaveID      int      `json:"slaveid,omitempty"`      // Modbus Slave ID（TCP/RTU 通用，預設 1）
 }
 
@@ -251,7 +250,7 @@ func LoadPtTasks(path string) ([]PointerTaskConfig, error) {
 	return PtTasks, nil
 }
 
-// MergeDevicesAndTasks 將任務按照 DeviceUUID（或 ProtocolUUID）掛載到對應的設備
+// MergeDevicesAndTasks 將任務按照 ProtocolUUID 掛載到對應的設備
 func MergeDevicesAndTasks(devs []DeviceProtocolConfig, tasks []PointerTaskConfig) *Config {
 	byUUID := make(map[string]*DeviceProtocolConfig, len(devs))
 	for i := range devs {
@@ -259,13 +258,10 @@ func MergeDevicesAndTasks(devs []DeviceProtocolConfig, tasks []PointerTaskConfig
 	}
 
 	for _, t := range tasks {
-		// 優先使用 DeviceUUID，如果為空則使用 ProtocolUUID（向下相容）
-		link := t.DeviceUUID
+		// 使用 ProtocolUUID 來匹配設備
+		link := t.ProtocolUUID
 		if link == "" {
-			link = t.ProtocolUUID
-		}
-		if link == "" {
-			fmt.Printf("[WARN] Task %q 無對應 UUID（device_uuid/protocoluuid 皆空）已略過\n", t.Name)
+			fmt.Printf("[WARN] Task %q 無對應 UUID（protocoluuid 為空）已略過\n", t.Name)
 			continue
 		}
 
@@ -338,7 +334,7 @@ func SaveDevices(path string) error {
 	return os.WriteFile(path, b, 0644)
 }
 
-// SavePtTasks 儲存所有排程任務到 pttasks.json（扁平化，每個 task 需帶上 DeviceUUID）
+// SavePtTasks 儲存所有排程任務到 pttasks.json（扁平化，每個 task 需帶上 ProtocolUUID）
 func SavePtTasks(path string) error {
 	all := make([]PointerTaskConfig, 0, 256)
 
@@ -346,16 +342,9 @@ func SavePtTasks(path string) error {
 		dev := st.Config
 		for _, t := range dev.Tasks {
 			tt := t
-			// 確保有帶上對應的裝置 UUID（優先 DeviceUUID，否則回填到 ProtocolUUID）
-			if tt.DeviceUUID == "" {
-				if tt.ProtocolUUID != "" {
-					// ProtocolUUID 已經存在，保持不變
-				} else {
-					tt.ProtocolUUID = dev.UUID
-				}
-			} else {
-				// 如果有 DeviceUUID，也同時設定 ProtocolUUID 以確保相容性
-				tt.ProtocolUUID = tt.DeviceUUID
+			// 確保有帶上對應的裝置 UUID
+			if tt.ProtocolUUID == "" {
+				tt.ProtocolUUID = dev.UUID
 			}
 			// 註：若要避免把從 device 繼承的 community 寫出，可在此視需求清空：
 			// if tt.Community == dev.Community { tt.Community = "" }

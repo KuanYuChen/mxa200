@@ -195,9 +195,8 @@ func addDevice(c *gin.Context) {
 		// 尋找與設備 UUID 匹配的任務
 		for _, task := range allTasks {
 			// 使用 protocoluuid 來匹配設備
-			if task.ProtocolUUID == cfg.UUID || task.DeviceUUID == cfg.UUID {
+			if task.ProtocolUUID == cfg.UUID {
 				// 更新任務的設備 UUID 以確保一致性
-				task.DeviceUUID = cfg.UUID
 				task.ProtocolUUID = cfg.UUID
 				cfg.Tasks = append(cfg.Tasks, task)
 			}
@@ -568,15 +567,11 @@ func listTasks(c *gin.Context) {
 		return
 	}
 
-	// 確保所有任務都有 protocoluuid 欄位（向下相容性修復）
+	// 確保所有任務都有 protocoluuid 欄位
 	for i := range tasks {
 		task := &tasks[i]
-		// 如果 protocoluuid 為空但 DeviceUUID 不為空，則使用 DeviceUUID 作為 protocoluuid
-		if task.ProtocolUUID == "" && task.DeviceUUID != "" {
-			task.ProtocolUUID = task.DeviceUUID
-		}
-		// 如果兩者都為空，嘗試從設備狀態中找到對應的 UUID
-		if task.ProtocolUUID == "" && task.DeviceUUID == "" {
+		// 如果 protocoluuid 為空，需要記錄警告
+		if task.ProtocolUUID == "" {
 			// 這種情況下需要根據任務所屬的設備來推斷
 			// 但由於資料結構限制，我們無法直接獲得，需要透過其他方式
 			log.Printf("Warning: Task %s 缺少設備 UUID 資訊", task.Name)
@@ -601,7 +596,7 @@ func getTask(c *gin.Context) {
 	}
 
 	for _, task := range tasks {
-		if task.DeviceUUID == uuid {
+		if task.ProtocolUUID == uuid {
 			c.JSON(http.StatusOK, task)
 			return
 		}
@@ -638,7 +633,7 @@ func addTask(c *gin.Context) {
 
 	var targetDevice *DeviceState
 	for _, state := range deviceStates {
-		log.Println("Checking device:", state.Config.Name, "UUID:", state.Config.UUID, "against task DeviceUUID:", task.DeviceUUID)
+		log.Println("Checking device:", state.Config.Name, "UUID:", state.Config.UUID, "against task ProtocolUUID:", task.ProtocolUUID)
 
 		log.Println("task.ProtocolUUID:", task.ProtocolUUID)
 		if state.Config.UUID == task.ProtocolUUID {
@@ -712,7 +707,7 @@ func addTask(c *gin.Context) {
 	}
 
 	// 設定任務的其他欄位
-	task.ProtocolUUID = task.DeviceUUID
+	task.ProtocolUUID = targetDevice.Config.UUID
 	if task.SlaveID == 0 {
 		task.SlaveID = 1 // 預設 Slave ID
 	}
@@ -765,8 +760,8 @@ func updateTask(c *gin.Context) {
 
 	for _, state := range deviceStates {
 		for i, task := range state.Config.Tasks {
-			// 使用任務名稱和設備UUID來識別任務（因為任務本身可能沒有獨立的UUID）
-			if task.Name == taskUUID || (task.DeviceUUID == taskUUID) {
+			// 使用任務名稱和ProtocolUUID來識別任務
+			if task.Name == taskUUID || (task.ProtocolUUID == taskUUID) {
 				targetDevice = state
 				taskIndex = i
 				break
@@ -790,7 +785,6 @@ func updateTask(c *gin.Context) {
 
 	// 保持一些原有的系統欄位
 	originalTask := targetDevice.Config.Tasks[taskIndex]
-	updatedTask.DeviceUUID = originalTask.DeviceUUID
 	updatedTask.ProtocolUUID = originalTask.ProtocolUUID
 	if updatedTask.SlaveID == 0 {
 		updatedTask.SlaveID = originalTask.SlaveID
@@ -838,8 +832,8 @@ func deleteTask(c *gin.Context) {
 
 	for _, state := range deviceStates {
 		for i, task := range state.Config.Tasks {
-			// 使用任務名稱和設備UUID來識別任務
-			if task.Name == taskUUID || task.DeviceUUID == taskUUID {
+			// 使用任務名稱和ProtocolUUID來識別任務
+			if task.Name == taskUUID || task.ProtocolUUID == taskUUID {
 				targetDevice = state
 				taskIndex = i
 				deletedTask = task

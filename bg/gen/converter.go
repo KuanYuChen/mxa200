@@ -45,7 +45,7 @@ type PointerTaskConfig struct {
 	IntervalMs   int      `json:"interval_ms"`
 	ProtocolUUID string   `json:"protocoluuid,omitempty"`
 	PTUUIDs      []string `json:"ptuuids,omitempty"`
-	DeviceUUID   string   `json:"uuid,omitempty"`
+	TaskUUID     string   `json:"uuid,omitempty"`
 	SlaveID      int      `json:"slaveid,omitempty"`
 }
 
@@ -428,7 +428,7 @@ func mergedCSVToJSON() error {
 	}
 	for _, task := range originalTasks {
 		taskKey := fmt.Sprintf("%s-%s-%d-%d", task.Name, task.Function, task.Address, task.Quantity)
-		taskUUIDs[taskKey] = task.DeviceUUID
+		taskUUIDs[taskKey] = task.TaskUUID // 使用任務自己的UUID而不是設備UUID
 	}
 	for _, device := range originalDevices {
 		deviceKey := fmt.Sprintf("%s-%s-%d", device.Name, device.IP, device.Port)
@@ -583,7 +583,7 @@ func mergedCSVToJSON() error {
 					IntervalMs:   intervalMs,
 					ProtocolUUID: "",
 					PTUUIDs:      []string{},
-					DeviceUUID:   taskUUID,
+					TaskUUID:     taskUUID,
 					SlaveID:      slaveID,
 				}
 				taskMap[taskKey] = task
